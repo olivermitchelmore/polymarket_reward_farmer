@@ -38,7 +38,7 @@ pub async fn connect_to_market_ws(tx: crossfire::MAsyncTx<ChannelMessage>, asset
             }
         }
         Err(e) => {
-            eprintln!("Error connecting to market: {:?}", e);
+            eprintln!("Error connecting to market_logic: {:?}", e);
         }
     }
 }

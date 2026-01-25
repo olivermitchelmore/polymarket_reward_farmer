@@ -1,6 +1,6 @@
 use crate::infra::config::MarketConfig;
 use crate::infra::get_token_id;
-use crate::market::market_types::{
+use crate::market_logic::market_types::{
     NewPrices, OpenOrder, OpenOrderStatus, Order, OrderRequest, Spreads,
 };
 use crate::types::TokenIds;

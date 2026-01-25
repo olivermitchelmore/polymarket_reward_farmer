@@ -1,7 +1,5 @@
-use alloy::primitives::Address;
 use anyhow::{Context, Result};
 use dotenv::dotenv;
-use polymarket_client_sdk::auth::Credentials;
 use polymarket_client_sdk::types::Decimal;
 use serde::Deserialize;
 use std::env;
@@ -31,7 +29,7 @@ impl ConfigParams {
     pub fn new() -> Result<Self> {
         let (funder_address, private_key) = Self::load_env_vars().expect("Failed to load env vars");
         let market_configs =
-            MarketConfigs::load_config().context("Failed to load market configs")?;
+            MarketConfigs::load_config().context("Failed to load market_logic configs")?;
         Ok(Self {
             funder_address,
             private_key,

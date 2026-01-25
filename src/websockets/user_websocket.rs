@@ -4,7 +4,6 @@ use crate::websockets::ws_types::{
 use alloy::primitives::Address;
 use futures::StreamExt;
 use polymarket_client_sdk::auth::Credentials;
-use polymarket_client_sdk::clob::types::Side;
 use polymarket_client_sdk::clob::ws::types::response::OrderMessageType;
 use polymarket_client_sdk::clob::ws::{Client, WsMessage};
 

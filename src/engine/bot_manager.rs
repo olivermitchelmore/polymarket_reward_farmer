@@ -1,7 +1,7 @@
 use crate::infra::{ConfigParams, SigningUtils};
-use crate::market::Market;
+use crate::market_logic::Market;
 
-use crate::market::market_types::{NewPrices, Order, OrderRequest};
+use crate::market_logic::market_types::{NewPrices, Order, OrderRequest};
 use crate::websockets::ws_types::{ChannelData, ChannelMessage, UserData};
 use crate::websockets::{connect_to_market_ws, connect_to_user_ws};
 use ahash::AHashMap;
@@ -17,13 +17,8 @@ pub struct BotManager {
 }
 
 impl BotManager {
-    pub async fn new() -> Self {
-        let config_params = ConfigParams::new().expect("Failed to get config params");
-        let signing_utils =
-            SigningUtils::new_client(&config_params.private_key, &config_params.funder_address)
-                .await
-                .expect("Failed to create signing utils");
-        let markets = Self::get_markets().await;
+    pub async fn new(config_params: ConfigParams, signing_utils: SigningUtils) -> Self {
+        let markets = Self::get_markets(config_params).await;
         Self {
             markets,
             signing_utils,
@@ -71,9 +66,9 @@ impl BotManager {
     }
 
     // pub fn get_initial_prices(&self) {
-    //     for (market_id, market) in &self.markets {
+    //     for (market_id, market_logic) in &self.markets {
     //         let price_request = PriceRequest::builder()
-    //             .token_id(market.token_ids.buy_token)
+    //             .token_id(market_logic.token_ids.buy_token)
     //             .side(Side::Buy)
     //             .build();
     //         PriceResponse
@@ -93,7 +88,7 @@ impl BotManager {
         let credentials = self.signing_utils.client.credentials().clone();
         let funder_address = self.signing_utils.funder_address;
 
-        let (tx, mut rx) = mpsc::bounded_async(5);
+        let (tx, rx) = mpsc::bounded_async(5);
         let market_sender = tx.clone();
         tokio::spawn(async move { connect_to_market_ws(market_sender, asset_ids.clone()).await });
         tokio::spawn(
@@ -101,8 +96,7 @@ impl BotManager {
         );
         rx.into_blocking()
     }
-    pub async fn get_markets() -> AHashMap<B256, Market> {
-        let config_params = ConfigParams::new().expect("Failed to load config");
+    pub async fn get_markets(config_params: ConfigParams) -> AHashMap<B256, Market> {
         let mut futures = Vec::new();
         let mut markets = AHashMap::new();
 
@@ -114,7 +108,7 @@ impl BotManager {
             match assigned_market_result {
                 Ok((market, market_id)) => {
                     println!(
-                        "market created: {}, {:?} {:?}",
+                        "market_logic created: {}, {:?} {:?}",
                         market_id, market.token_ids.buy_token, market.token_ids.sell_token
                     );
                     markets.insert(market_id, market);

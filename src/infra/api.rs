@@ -23,7 +23,7 @@ pub async fn get_token_id(slug: &String) -> Result<(TokenIds, B256)> {
         .text()
         .await?;
     let market_response: MarketResponse = serde_json::from_str(&response)
-        .with_context(|| format!("Invalid market response for: {}", slug))?;
+        .with_context(|| format!("Invalid market_logic response for: {}", slug))?;
     let market: &IndividualMarket = &market_response.markets[0];
     let token_vec: Vec<U256> =
         serde_json::from_str(&market.clob_token_ids).context("failed to parse token vec json")?;
