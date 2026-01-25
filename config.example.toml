@@ -1,0 +1,11 @@
+[[markets]]
+slug = "example market slugt "
+order_size = 5
+spread = 0.02
+exposure = 5
+
+[[markets]]
+slug = "example market slug"
+order_size = 5
+spread = 0.02
+exposure = 1

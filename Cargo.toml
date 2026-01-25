@@ -1,0 +1,19 @@
+[package]
+name = "polymarket_reward_farmer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+anyhow = "1.0.100"
+tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.148"
+futures = "0.3.31"
+alloy = { version = "1.4.3", default-features = false, features = ["dyn-abi", "serde", "signers", "sol-types", "signer-local", "transports"] }
+reqwest = "0.12.28"
+crossfire = "2.1.10"
+ahash = "0.8.12"
+dotenv = "0.15.0"
+toml = "0.9.11"
+polymarket-client-sdk = { git = "https://github.com/Polymarket/rs-clob-client", features = ["clob", "ws"] }

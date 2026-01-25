@@ -1,0 +1,7 @@
+/target
+.env
+.idea/
+*.toml
+
+!/Cargo.toml
+!/config.example.toml
