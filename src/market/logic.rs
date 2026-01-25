@@ -4,7 +4,7 @@ use crate::market::market_types::{
     NewPrices, OpenOrder, OpenOrderStatus, Order, OrderRequest, Spreads,
 };
 use crate::types::TokenIds;
-use crate::websockets::ws_types::{OrderFill, OrderSide, PlacedOrder};
+use crate::websockets::ws_types::{OrderUpdate, OrderSide, PlacedOrder};
 use alloy::primitives::{B256, U256};
 use anyhow::Result;
 use polymarket_client_sdk::types::Decimal;
@@ -121,7 +121,6 @@ impl Market {
                 OpenOrderStatus::Placed(order_id) => {
                     if order.price != desired_price {
                         let new_order = Order::new(desired_price, size, token_id);
-                        dbg!("placing new order: {}", &new_order);
                         Some(CheckOrderResult {
                             place: Some(new_order),
                             cancel: Some(order_id.clone()),
@@ -145,7 +144,7 @@ impl Market {
         placed_order
     }
 
-    pub fn check_placed_order(&mut self, placed_order: PlacedOrder) -> Option<String> {
+    pub fn placed_order_update(&mut self, placed_order: PlacedOrder) -> Option<String> {
         let mut cancel_order_id: Option<String> = None;
 
         let open_order = if placed_order.token_id == self.token_ids.buy_token {
@@ -204,7 +203,7 @@ impl Market {
             OpenOrderStatus::Placed(placed_order.order_id),
         ))
     }
-    pub fn order_canceled(&mut self, order_id: String) {
+    pub fn canceled_order_update(&mut self, order_id: String) {
         let order = self.get_order_side_from_id(&order_id);
         match order {
             Some(order_side) => match order_side {
@@ -218,15 +217,14 @@ impl Market {
             None => {}
         }
     }
-    pub fn order_filled(&mut self, fill: OrderFill) {
-        // update exposure even if the order isnt assigned to the struct
+    pub fn order_update(&mut self, fill: OrderUpdate) {
         let order = self.get_order_side_from_id(&fill.order_id);
         match order {
             Some(order_side) => match order_side {
                 OrderSide::Buy => {
                     if let Some(order) = &mut self.bid_order {
-                        order.matched += Decimal::from(fill.amount);
-                        self.exposure += Decimal::from(fill.amount);
+                        order.matched += fill.amount;
+                        self.exposure += fill.amount;
                         if order.matched >= self.config.order_size {
                             self.bid_order = None;
                         }
@@ -234,8 +232,8 @@ impl Market {
                 }
                 OrderSide::Sell => {
                     if let Some(order) = &mut self.ask_order {
-                        order.matched += Decimal::from(fill.amount);
-                        self.exposure -= Decimal::from(fill.amount);
+                        order.matched += fill.amount;
+                        self.exposure -= fill.amount;
                         if order.matched >= self.config.order_size {
                             self.ask_order = None;
                         }

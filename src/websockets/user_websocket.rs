@@ -1,5 +1,5 @@
 use crate::websockets::ws_types::{
-    ChannelData, ChannelMessage, OrderFill, PlacedOrder, UserData,
+    ChannelData, ChannelMessage, OrderUpdate, PlacedOrder, UserData,
 };
 use alloy::primitives::Address;
 use futures::StreamExt;
@@ -36,13 +36,12 @@ pub async fn connect_to_user_ws(
                             price,
                             token_id,
                         };
-                        println!("order placed for token_id: {}", token_id);
                         UserData::Placed(placed_order)
                     }
                     OrderMessageType::Update => {
                         let amount = order.size_matched.unwrap();
-                        let order_fill = OrderFill { order_id, amount };
-                        UserData::Filled(order_fill)
+                        let order_fill = OrderUpdate { order_id, amount };
+                        UserData::Update(order_fill)
                     }
                     OrderMessageType::Cancellation => UserData::Cancelled(order_id),
                     _ => panic!("Unknown message type"),

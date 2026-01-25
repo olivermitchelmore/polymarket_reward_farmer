@@ -56,11 +56,13 @@ impl BotManager {
                     }
                     ChannelData::UserData(user_data) => match user_data {
                         UserData::Placed(placed_order) => {
-                            market.check_placed_order(placed_order);
+                            market.placed_order_update(placed_order);
                         }
-                        UserData::Filled(order_fill) => {}
+                        UserData::Update(order_update) => {
+                            market.order_update(order_update);
+                        }
                         UserData::Cancelled(order_id) => {
-                            market.order_canceled(order_id);
+                            market.canceled_order_update(order_id);
                         }
                     },
                 }
@@ -146,6 +148,10 @@ impl BotManager {
                 .unwrap();
             let signed_order = client.sign(&signer, order).await.unwrap();
             let future = client.post_order(signed_order).await;
+            match future {
+                Ok(_) => {},
+                Err(e) => eprintln!("{e}"),
+            }
         });
     }
 }

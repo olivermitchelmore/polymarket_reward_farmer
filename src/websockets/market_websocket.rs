@@ -6,7 +6,6 @@ use polymarket_client_sdk::clob::ws::Client;
 
 pub async fn connect_to_market_ws(tx: crossfire::MAsyncTx<ChannelMessage>, asset_ids: Vec<U256>) {
     let client = Client::default();
-    println!("ASSET IDS, {:?}", &asset_ids);
     let stream_result = client.subscribe_prices(asset_ids.clone());
 
     match stream_result {

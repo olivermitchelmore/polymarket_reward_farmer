@@ -11,11 +11,11 @@ pub enum OrderSide {
 pub enum UserData {
     Placed(PlacedOrder),
     Cancelled(String),
-    Filled(OrderFill),
+    Update(OrderUpdate),
 }
 
 #[derive(Debug)]
-pub struct OrderFill {
+pub struct OrderUpdate {
     pub order_id: String,
     pub amount: Decimal,
 }
