@@ -82,7 +82,6 @@ impl BotManager {
 
         for (_, market) in &self.markets {
             asset_ids.push(market.token_ids.buy_token);
-            println!("{}", market.token_ids.buy_token);
         }
 
         let credentials = self.signing_utils.client.credentials().clone();
@@ -106,14 +105,11 @@ impl BotManager {
         let assigned_market_results = join_all(futures).await;
         for assigned_market_result in assigned_market_results {
             match assigned_market_result {
-                Ok((market, market_id)) => {
-                    println!(
-                        "market_logic created: {}, {:?} {:?}",
-                        market_id, market.token_ids.buy_token, market.token_ids.sell_token
-                    );
+                Ok((market, market_id, market_slug)) => {
+                    println!("market created for slug: {}", market_slug);
                     markets.insert(market_id, market);
                 }
-                Err(e) => eprintln!("{e}"),
+                Err(e) => eprintln!("Market creation failed: {e}"),
             }
         }
         markets
@@ -143,7 +139,9 @@ impl BotManager {
             let signed_order = client.sign(&signer, order).await.unwrap();
             let future = client.post_order(signed_order).await;
             match future {
-                Ok(_) => {},
+                Ok(order) => {
+                    println!("Successfully placed order: {} at price: {}", order.order_id, price);
+                },
                 Err(e) => eprintln!("{e}"),
             }
         });

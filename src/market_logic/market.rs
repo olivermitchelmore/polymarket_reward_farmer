@@ -23,8 +23,9 @@ pub struct Market {
 }
 
 impl Market {
-    pub async fn new(config: MarketConfig) -> Result<(Self, B256)> {
+    pub async fn new(config: MarketConfig) -> Result<(Self, B256, String)> {
         let (token_ids, market_identifier) = get_token_id(&config.slug).await?;
+        let market_slug = config.slug.clone();
 
         let market = Self {
             token_ids,
@@ -33,7 +34,7 @@ impl Market {
             config,
             exposure: Decimal::from(0),
         };
-        Ok((market, market_identifier))
+        Ok((market, market_identifier, market_slug))
     }
 
     fn get_spreads(&self) -> Spreads {

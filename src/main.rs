@@ -19,11 +19,15 @@ async fn main() {
         .expect("Failed to read line");
 
 
+    println!("Loading config...");
     let config_params = ConfigParams::new().expect("Failed to get config params");
+    println!("Creating signing utils...");
     let signing_utils = SigningUtils::new_client(&config_params.private_key, &config_params.funder_address)
                 .await
                 .expect("Failed to create signing utils");
 
+    println!("Initializing bot manager");
     let bot_manager = BotManager::new(config_params, signing_utils).await;
+    println!("Initialization complete\nQuoting markets...");
     bot_manager.run();
 }
