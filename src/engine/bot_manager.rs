@@ -19,12 +19,11 @@ pub struct BotManager {
 impl BotManager {
     pub async fn new() -> Self {
         let config_params = ConfigParams::new().expect("Failed to get config params");
-        let funder_address = &config_params.funder_address;
         let signing_utils =
             SigningUtils::new_client(&config_params.private_key, &config_params.funder_address)
                 .await
                 .expect("Failed to create signing utils");
-        let markets = Self::get_markets(config_params).await;
+        let markets = Self::get_markets().await;
         Self {
             markets,
             signing_utils,
@@ -85,7 +84,6 @@ impl BotManager {
         let mut asset_ids = Vec::new();
 
         for (_, market) in &self.markets {
-            market.token_ids.buy_token;
             asset_ids.push(market.token_ids.buy_token);
             println!("{}", market.token_ids.buy_token);
         }
@@ -101,7 +99,7 @@ impl BotManager {
         );
         rx.into_blocking()
     }
-    pub async fn get_markets(config_params: ConfigParams) -> AHashMap<B256, Market> {
+    pub async fn get_markets() -> AHashMap<B256, Market> {
         let config_params = ConfigParams::new().expect("Failed to load config");
         let mut futures = Vec::new();
         let mut markets = AHashMap::new();
