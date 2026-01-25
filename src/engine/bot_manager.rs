@@ -56,11 +56,11 @@ impl BotManager {
                     }
                     ChannelData::UserData(user_data) => match user_data {
                         UserData::Placed(placed_order) => {
-                            // market.check_placed_order(placed_order);
+                            market.check_placed_order(placed_order);
                         }
                         UserData::Filled(order_fill) => {}
                         UserData::Cancelled(order_id) => {
-                            // market.order_canceled(order_id);
+                            market.order_canceled(order_id);
                         }
                     },
                 }
@@ -112,8 +112,8 @@ impl BotManager {
             match assigned_market_result {
                 Ok((market, market_id)) => {
                     println!(
-                        "market created: {}, {:?}",
-                        market_id, market.token_ids.buy_token
+                        "market created: {}, {:?} {:?}",
+                        market_id, market.token_ids.buy_token, market.token_ids.sell_token
                     );
                     markets.insert(market_id, market);
                 }

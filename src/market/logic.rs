@@ -147,10 +147,11 @@ impl Market {
 
     pub fn check_placed_order(&mut self, placed_order: PlacedOrder) -> Option<String> {
         let mut cancel_order_id: Option<String> = None;
-        let open_order = match placed_order.side {
-            OrderSide::Buy => &mut self.bid_order,
-            OrderSide::Sell => &mut self.ask_order,
-        };
+
+        let open_order = if placed_order.token_id == self.token_ids.buy_token {
+            &mut self.bid_order
+        } else { &mut self.ask_order };
+
         match open_order {
             Some(order) => {
                 match &order.status {

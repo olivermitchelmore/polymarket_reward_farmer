@@ -1,4 +1,4 @@
-use alloy::primitives::B256;
+use alloy::primitives::{B256, U256};
 use polymarket_client_sdk::types::Decimal;
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ pub struct OrderFill {
 pub struct PlacedOrder {
     pub order_id: String,
     pub price: Decimal,
-    pub side: OrderSide,
+    pub token_id: U256,
 }
 
 #[derive(Debug)]

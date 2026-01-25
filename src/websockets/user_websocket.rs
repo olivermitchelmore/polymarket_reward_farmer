@@ -1,9 +1,9 @@
 use crate::websockets::ws_types::{
-    ChannelData, ChannelMessage, OrderFill, OrderSide, PlacedOrder, UserData,
+    ChannelData, ChannelMessage, OrderFill, PlacedOrder, UserData,
 };
-use alloy::primitives::{Address, B256, U256};
+use alloy::primitives::Address;
 use futures::StreamExt;
-use polymarket_client_sdk::auth::{Credentials, Uuid};
+use polymarket_client_sdk::auth::Credentials;
 use polymarket_client_sdk::clob::types::Side;
 use polymarket_client_sdk::clob::ws::types::response::OrderMessageType;
 use polymarket_client_sdk::clob::ws::{Client, WsMessage};
@@ -22,7 +22,6 @@ pub async fn connect_to_user_ws(
     while let Some(event) = stream.next().await {
         match event {
             Ok(WsMessage::Order(order)) => {
-                println!("{:?}", order);
                 let msg_type = order.msg_type.unwrap();
                 let market_id = order.market;
                 let order_id = order.id;
@@ -30,17 +29,14 @@ pub async fn connect_to_user_ws(
                 let user_data: UserData = match &msg_type {
                     OrderMessageType::Placement => {
                         let price = order.price;
-                        let side = match order.side {
-                            Side::Buy => OrderSide::Buy,
-                            Side::Sell => OrderSide::Sell,
-                            _ => panic!("Unknown order side"),
-                        };
+                        let token_id = order.asset_id;
 
                         let placed_order = PlacedOrder {
                             order_id,
                             price,
-                            side,
+                            token_id,
                         };
+                        println!("order placed for token_id: {}", token_id);
                         UserData::Placed(placed_order)
                     }
                     OrderMessageType::Update => {
