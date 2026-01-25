@@ -119,7 +119,7 @@ impl Market {
             Some(order) => match &order.status {
                 OpenOrderStatus::Pending => None,
                 OpenOrderStatus::Placed(order_id) => {
-                    if desired_price > Decimal::from(1) || desired_price < Decimal::from(0) {
+                    if desired_price > Decimal::new(99, 2) || desired_price < Decimal::new(1, 2) {
                         return Some(CheckOrderResult {
                             place: None,
                             cancel: Some(order_id.clone()),

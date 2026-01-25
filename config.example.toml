@@ -1,5 +1,5 @@
 [[markets]]
-slug = "example market slugt "
+slug = "example market slug"
 order_size = 5
 spread = 0.02
 exposure = 5
