@@ -115,10 +115,16 @@ impl Market {
         size: Decimal,
         token_id: U256,
     ) -> Option<CheckOrderResult> {
-        let placed_order = match &open_order {
+        let place_order = match &open_order {
             Some(order) => match &order.status {
                 OpenOrderStatus::Pending => None,
                 OpenOrderStatus::Placed(order_id) => {
+                    if desired_price > Decimal::from(1) || desired_price < Decimal::from(0) {
+                        return Some(CheckOrderResult {
+                            place: None,
+                            cancel: Some(order_id.clone()),
+                        })
+                    };
                     if order.price != desired_price {
                         let new_order = Order::new(desired_price, size, token_id);
                         Some(CheckOrderResult {
@@ -138,10 +144,10 @@ impl Market {
                 })
             }
         };
-        if placed_order.is_some() {
+        if place_order.is_some() {
             *open_order = Some(OpenOrder::default(desired_price, OpenOrderStatus::Pending));
         }
-        placed_order
+        place_order
     }
 
     pub fn placed_order_update(&mut self, placed_order: PlacedOrder) -> Option<String> {
