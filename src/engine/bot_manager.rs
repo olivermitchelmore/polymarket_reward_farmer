@@ -10,7 +10,6 @@ use crossfire::{MAsyncTx, Rx, mpsc};
 use futures::future::join_all;
 use polymarket_client_sdk::clob::types::Side;
 use polymarket_client_sdk::clob::types::request::CancelMarketOrderRequest;
-use polymarket_client_sdk::types::Decimal;
 
 pub struct BotManager {
     markets: AHashMap<B256, Market>,
@@ -39,25 +38,22 @@ impl BotManager {
                             best_ask: market_data.best_ask,
                         };
                         let orders = market.price_update(new_prices);
-                        match orders {
-                            Some(order_requests) => {
-                                for order_request in order_requests {
-                                    let order_request_tx = tx.clone();
-                                    match order_request {
-                                        OrderRequest::PlaceOrder(order) => self.place_order(
-                                            order,
-                                            message.market_id,
-                                            order_request_tx,
-                                        ),
-                                        OrderRequest::CancelOrder(order_id) => self.cancel_order(
-                                            order_id,
-                                            message.market_id,
-                                            order_request_tx,
-                                        ),
-                                    }
+                        if let Some(order_requests) = orders {
+                            for order_request in order_requests {
+                                let order_request_tx = tx.clone();
+                                match order_request {
+                                    OrderRequest::PlaceOrder(order) => self.place_order(
+                                        order,
+                                        message.market_id,
+                                        order_request_tx,
+                                    ),
+                                    OrderRequest::CancelOrder(order_id) => self.cancel_order(
+                                        order_id,
+                                        message.market_id,
+                                        order_request_tx,
+                                    ),
                                 }
                             }
-                            None => {}
                         }
                     }
                     ChannelData::UserData(user_data) => match user_data {
@@ -168,7 +164,7 @@ impl BotManager {
     pub fn place_order(&self, order: Order, market_id: B256, tx: MAsyncTx<ChannelMessage>) {
         let client = self.signing_utils.client.clone();
         let signer = self.signing_utils.signer.clone();
-        let price = Decimal::from(order.price);
+        let price = order.price;
 
         tokio::spawn(async move {
             let order = client

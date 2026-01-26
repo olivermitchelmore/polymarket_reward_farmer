@@ -30,8 +30,8 @@ pub async fn get_token_id(slug: &String) -> Result<(TokenIds, B256)> {
     let market_identifier: B256 = market.condition_id;
 
     let token_ids = TokenIds {
-        buy_token: token_vec[0].clone(),
-        sell_token: token_vec[1].clone(),
+        buy_token: token_vec[0],
+        sell_token: token_vec[1],
     };
     Ok((token_ids, market_identifier))
 }
