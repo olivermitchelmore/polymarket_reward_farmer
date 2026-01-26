@@ -4,7 +4,7 @@ use crate::market_logic::market_types::{
     NewPrices, OpenOrder, OpenOrderStatus, Order, OrderRequest, Spreads,
 };
 use crate::types::TokenIds;
-use crate::websockets::ws_types::{OrderUpdate, OrderSide, PlacedOrder};
+use crate::websockets::ws_types::{OrderSide, OrderUpdate, PlacedOrder};
 use alloy::primitives::{B256, U256};
 use anyhow::Result;
 use polymarket_client_sdk::types::Decimal;
@@ -38,13 +38,13 @@ impl Market {
     }
 
     fn get_spreads(&self) -> Spreads {
-        let ask = if self.exposure > self.config.exposure {
+        let ask = if self.exposure > self.config.max_exposure {
             Decimal::from(0)
         } else {
             self.config.spread
         };
 
-        let bid = if self.exposure < -self.config.exposure {
+        let bid = if self.exposure < -self.config.max_exposure {
             Decimal::from(0)
         } else {
             self.config.spread
@@ -124,7 +124,7 @@ impl Market {
                         return Some(CheckOrderResult {
                             place: None,
                             cancel: Some(order_id.clone()),
-                        })
+                        });
                     };
                     if order.price != desired_price {
                         let new_order = Order::new(desired_price, size, token_id);
@@ -151,12 +151,14 @@ impl Market {
         place_order
     }
 
-    pub fn placed_order_update(&mut self, placed_order: PlacedOrder) -> Option<String> {
+    pub fn order_placed_update(&mut self, placed_order: PlacedOrder) -> Option<String> {
         let mut cancel_order_id: Option<String> = None;
 
         let open_order = if placed_order.token_id == self.token_ids.buy_token {
             &mut self.bid_order
-        } else { &mut self.ask_order };
+        } else {
+            &mut self.ask_order
+        };
 
         match open_order {
             Some(order) => {
@@ -249,5 +251,125 @@ impl Market {
             },
             None => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn mock_market(
+        exposure: Option<Decimal>,
+        open_bid: Option<OpenOrder>,
+        open_ask: Option<OpenOrder>,
+    ) -> Market {
+        let config = MarketConfig {
+            slug: "test-slug".to_string(),
+            order_size: Decimal::from(5),
+            spread: Decimal::new(2, 2),
+            max_exposure: Decimal::from(5),
+        };
+
+        Market {
+            token_ids: TokenIds {
+                buy_token: U256::from(1),
+                sell_token: U256::from(2),
+            },
+            bid_order: open_bid,
+            ask_order: open_ask,
+            exposure: exposure.unwrap_or(Decimal::from(0)),
+            config,
+        }
+    }
+    #[test]
+    fn order_placed_update_updates_market_state() {
+        let open_bid = Some(OpenOrder::default(
+            Decimal::new(10, 2),
+            OpenOrderStatus::Placed("first-bid-test-order-id".to_string()),
+        ));
+        let placed_bid_order = PlacedOrder {
+            order_id: "second-bid-test-order-id".to_string(),
+            price: Decimal::new(10, 2),
+            token_id: U256::from(1),
+        };
+        let placed_ask_order = PlacedOrder {
+            order_id: "ask-test-order-id".to_string(),
+            price: Decimal::new(20, 2),
+            token_id: U256::from(2),
+        };
+        let mut market = mock_market(None, open_bid, None);
+        let bid_order_placed_result = market.order_placed_update(placed_bid_order);
+        assert!(bid_order_placed_result.is_some());
+        assert_eq!(
+            market.bid_order.as_ref().unwrap().status,
+            OpenOrderStatus::Placed("second-bid-test-order-id".to_string())
+        );
+
+        market.order_placed_update(placed_ask_order);
+        assert_eq!(
+            market.ask_order.as_ref().unwrap().status,
+            OpenOrderStatus::Placed("ask-test-order-id".to_string())
+        );
+    }
+    #[test]
+    fn test_get_spreads_exposure_management() {
+        let market = mock_market(Some(Decimal::from(10)), None, None);
+
+        let spreads = market.get_spreads();
+        assert_eq!(spreads.bid, market.config.spread);
+        assert_eq!(spreads.ask, Decimal::from(0));
+    }
+
+    #[test]
+    fn check_order_returns_none_if_open_order_pending() {
+        let mut open_order = Some(OpenOrder::default(
+            Decimal::new(11, 2),
+            OpenOrderStatus::Pending,
+        ));
+        let check_order_result = Market::check_order(
+            &mut open_order,
+            Decimal::new(10, 2),
+            Decimal::from(5),
+            U256::from(1),
+        );
+        assert!(check_order_result.is_none());
+    }
+
+    #[test]
+    fn test_order_fill_updates_exposure_and_open_orders() {
+        let open_bid = OpenOrder {
+            price: Decimal::new(10, 2),
+            status: OpenOrderStatus::Placed("a".to_string()),
+            matched: Decimal::from(0),
+        };
+
+        let mut market = mock_market(None, Some(open_bid), None);
+        let order_update = OrderUpdate {
+            order_id: "a".to_string(),
+            amount: Decimal::from(3),
+        };
+        market.order_update(order_update);
+        assert_eq!(market.bid_order.as_ref().unwrap().matched, Decimal::from(3));
+        assert_eq!(market.exposure, Decimal::from(3));
+    }
+    #[test]
+    fn test_filled_orders_get_canceled() {
+        let open_ask = OpenOrder {
+            price: Decimal::new(10, 2),
+            status: OpenOrderStatus::Placed("a".to_string()),
+            matched: Decimal::from(1),
+        };
+        let mut market = mock_market(None, None, Some(open_ask));
+        let first_order_update = OrderUpdate {
+            order_id: "a".to_string(),
+            amount: Decimal::from(3),
+        };
+        let second_order_update = OrderUpdate {
+            order_id: "a".to_string(),
+            amount: Decimal::from(1),
+        };
+        market.order_update(first_order_update);
+        assert_eq!(market.ask_order.as_ref().unwrap().matched, Decimal::from(4));
+        market.order_update(second_order_update);
+        assert!(market.ask_order.is_none());
     }
 }

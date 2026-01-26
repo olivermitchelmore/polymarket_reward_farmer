@@ -15,7 +15,7 @@ pub struct MarketConfig {
     pub slug: String,
     pub order_size: Decimal,
     pub spread: Decimal,
-    pub exposure: Decimal,
+    pub max_exposure: Decimal,
 }
 
 #[derive(Debug)]

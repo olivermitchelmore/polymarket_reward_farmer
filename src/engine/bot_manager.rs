@@ -51,7 +51,7 @@ impl BotManager {
                     }
                     ChannelData::UserData(user_data) => match user_data {
                         UserData::Placed(placed_order) => {
-                            market.placed_order_update(placed_order);
+                            market.order_placed_update(placed_order);
                         }
                         UserData::Update(order_update) => {
                             market.order_update(order_update);
@@ -140,8 +140,11 @@ impl BotManager {
             let future = client.post_order(signed_order).await;
             match future {
                 Ok(order) => {
-                    println!("Successfully placed order: {} at price: {}", order.order_id, price);
-                },
+                    println!(
+                        "Successfully placed order: {} at price: {}",
+                        order.order_id, price
+                    );
+                }
                 Err(e) => eprintln!("{e}"),
             }
         });

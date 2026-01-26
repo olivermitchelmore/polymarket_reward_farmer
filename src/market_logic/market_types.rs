@@ -23,6 +23,7 @@ pub enum OrderRequest {
     CancelOrder(String),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum OpenOrderStatus {
     Pending,
     Placed(String),

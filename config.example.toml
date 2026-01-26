@@ -2,10 +2,10 @@
 slug = "example market slug"
 order_size = 5
 spread = 0.02
-exposure = 5
+max_exposure = 5
 
 [[markets]]
 slug = "example market slug"
 order_size = 5
 spread = 0.02
-exposure = 1
+max_exposure = 1
