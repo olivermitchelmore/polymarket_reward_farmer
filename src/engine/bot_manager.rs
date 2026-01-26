@@ -2,13 +2,14 @@ use crate::infra::{ConfigParams, SigningUtils};
 use crate::market_logic::Market;
 
 use crate::market_logic::market_types::{NewPrices, Order, OrderRequest};
-use crate::websockets::ws_types::{ChannelData, ChannelMessage, UserData};
+use crate::types::channel_types::{ChannelData, ChannelMessage, UserData};
 use crate::websockets::{connect_to_market_ws, connect_to_user_ws};
 use ahash::AHashMap;
 use alloy::primitives::B256;
-use crossfire::{Rx, mpsc};
+use crossfire::{MAsyncTx, Rx, mpsc};
 use futures::future::join_all;
 use polymarket_client_sdk::clob::types::Side;
+use polymarket_client_sdk::clob::types::request::CancelMarketOrderRequest;
 use polymarket_client_sdk::types::Decimal;
 
 pub struct BotManager {
@@ -25,10 +26,13 @@ impl BotManager {
         }
     }
     pub fn run(mut self) {
-        let rx = self.start_websockets();
+        let (rx, tx) = self.start_websockets();
         while let Ok(message) = rx.recv() {
             if let Some(market) = self.markets.get_mut(&message.market_id) {
                 match message.channel_data {
+                    ChannelData::OrderActionError => {
+                        self.markets.remove(&message.market_id);
+                    }
                     ChannelData::MarketData(market_data) => {
                         let new_prices = NewPrices {
                             best_bid: market_data.best_bid,
@@ -38,11 +42,18 @@ impl BotManager {
                         match orders {
                             Some(order_requests) => {
                                 for order_request in order_requests {
+                                    let order_request_tx = tx.clone();
                                     match order_request {
-                                        OrderRequest::PlaceOrder(order) => self.place_order(order),
-                                        OrderRequest::CancelOrder(order_id) => {
-                                            self.cancel_order(order_id)
-                                        }
+                                        OrderRequest::PlaceOrder(order) => self.place_order(
+                                            order,
+                                            message.market_id,
+                                            order_request_tx,
+                                        ),
+                                        OrderRequest::CancelOrder(order_id) => self.cancel_order(
+                                            order_id,
+                                            message.market_id,
+                                            order_request_tx,
+                                        ),
                                     }
                                 }
                             }
@@ -57,7 +68,7 @@ impl BotManager {
                             market.order_update(order_update);
                         }
                         UserData::Cancelled(order_id) => {
-                            market.canceled_order_update(order_id);
+                            market.cancelled_order_update(order_id);
                         }
                     },
                 }
@@ -77,7 +88,7 @@ impl BotManager {
 
     // pub fn get_price(price_request: PriceRequest)
 
-    pub fn start_websockets(&self) -> Rx<ChannelMessage> {
+    pub fn start_websockets(&self) -> (Rx<ChannelMessage>, MAsyncTx<ChannelMessage>) {
         let mut asset_ids = Vec::new();
 
         for (_, market) in &self.markets {
@@ -88,12 +99,15 @@ impl BotManager {
         let funder_address = self.signing_utils.funder_address;
 
         let (tx, rx) = mpsc::bounded_async(5);
-        let market_sender = tx.clone();
-        tokio::spawn(async move { connect_to_market_ws(market_sender, asset_ids.clone()).await });
+        let market_data_sender = tx.clone();
         tokio::spawn(
-            async move { connect_to_user_ws(tx.clone(), credentials, funder_address).await },
+            async move { connect_to_market_ws(market_data_sender, asset_ids.clone()).await },
         );
-        rx.into_blocking()
+        let user_data_sender = tx.clone();
+        tokio::spawn(async move {
+            connect_to_user_ws(user_data_sender, credentials, funder_address).await
+        });
+        (rx.into_blocking(), tx)
     }
     pub async fn get_markets(config_params: ConfigParams) -> AHashMap<B256, Market> {
         let mut futures = Vec::new();
@@ -114,14 +128,44 @@ impl BotManager {
         }
         markets
     }
-    pub fn cancel_order(&self, order_id: String) {
+    pub fn cancel_order(&self, order_id: String, market_id: B256, tx: MAsyncTx<ChannelMessage>) {
         let client = self.signing_utils.client.clone();
 
         tokio::spawn(async move {
             let response = client.cancel_order(&order_id).await;
+            match response {
+                Ok(_) => println!("Cancelled order {order_id}"),
+                Err(e) => {
+                    eprintln!(
+                        "Error cancelling order {order_id}: {e}\nPanic cancelling all orders for market: {market_id} and shutting down market..."
+                    );
+                    let mut cancel_market_orders_request = CancelMarketOrderRequest::default();
+                    cancel_market_orders_request.market = Some(market_id);
+                    let cancel_market_orders_result = client
+                        .cancel_market_orders(&cancel_market_orders_request)
+                        .await;
+                    match cancel_market_orders_result {
+                        Ok(_) => {
+                            println!("Successfully cancelled all orders for market: {market_id}")
+                        }
+                        Err(e) => eprintln!(
+                            "Error cancelling all orders for market: {market_id} error: {e}"
+                        ),
+                    };
+                    let channel_message = ChannelMessage {
+                        market_id,
+                        channel_data: ChannelData::OrderActionError,
+                    };
+                    if let Err(e) = tx.send(channel_message).await {
+                        println!(
+                            "Error sending order action error through data channel. Error: {e}"
+                        );
+                    }
+                }
+            }
         });
     }
-    pub fn place_order(&self, order: Order) {
+    pub fn place_order(&self, order: Order, market_id: B256, tx: MAsyncTx<ChannelMessage>) {
         let client = self.signing_utils.client.clone();
         let signer = self.signing_utils.signer.clone();
         let price = Decimal::from(order.price);
@@ -142,10 +186,36 @@ impl BotManager {
                 Ok(order) => {
                     println!(
                         "Successfully placed order: {} at price: {}",
-                        order.order_id, price
+                        order.order_id, price,
                     );
                 }
-                Err(e) => eprintln!("{e}"),
+                Err(e) => {
+                    eprintln!(
+                        "Failed to place order: {e}\nPanic cancelling all orders for market: {market_id} and shutting down market..."
+                    );
+                    let mut cancel_market_orders_request = CancelMarketOrderRequest::default();
+                    cancel_market_orders_request.market = Some(market_id);
+                    let cancel_market_orders_result = client
+                        .cancel_market_orders(&cancel_market_orders_request)
+                        .await;
+                    match cancel_market_orders_result {
+                        Ok(_) => {
+                            println!("Successfully cancelled all orders for market: {market_id}")
+                        }
+                        Err(e) => eprintln!(
+                            "Error cancelling all orders for market: {market_id} error: {e}"
+                        ),
+                    };
+                    let channel_message = ChannelMessage {
+                        market_id,
+                        channel_data: ChannelData::OrderActionError,
+                    };
+                    if let Err(e) = tx.send(channel_message).await {
+                        println!(
+                            "Error sending order action error through data channel. Error: {e}"
+                        );
+                    }
+                }
             }
         });
     }

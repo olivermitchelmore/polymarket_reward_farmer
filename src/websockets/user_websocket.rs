@@ -1,4 +1,4 @@
-use crate::websockets::ws_types::{
+use crate::types::channel_types::{
     ChannelData, ChannelMessage, OrderUpdate, PlacedOrder, UserData,
 };
 use alloy::primitives::Address;

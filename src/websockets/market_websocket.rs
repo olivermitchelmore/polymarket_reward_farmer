@@ -1,5 +1,5 @@
-use crate::websockets::ws_types::MarketData;
-use crate::websockets::ws_types::{ChannelData, ChannelMessage};
+use crate::types::channel_types::MarketData;
+use crate::types::channel_types::{ChannelData, ChannelMessage};
 use alloy::primitives::U256;
 use futures::StreamExt;
 use polymarket_client_sdk::clob::ws::Client;

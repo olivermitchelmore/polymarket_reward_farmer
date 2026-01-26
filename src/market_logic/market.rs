@@ -4,7 +4,7 @@ use crate::market_logic::market_types::{
     NewPrices, OpenOrder, OpenOrderStatus, Order, OrderRequest, Spreads,
 };
 use crate::types::TokenIds;
-use crate::websockets::ws_types::{OrderSide, OrderUpdate, PlacedOrder};
+use crate::types::channel_types::{OrderSide, OrderUpdate, PlacedOrder};
 use alloy::primitives::{B256, U256};
 use anyhow::Result;
 use polymarket_client_sdk::types::Decimal;
@@ -212,7 +212,7 @@ impl Market {
             OpenOrderStatus::Placed(placed_order.order_id),
         ))
     }
-    pub fn canceled_order_update(&mut self, order_id: String) {
+    pub fn cancelled_order_update(&mut self, order_id: String) {
         let order = self.get_order_side_from_id(&order_id);
         match order {
             Some(order_side) => match order_side {

@@ -41,4 +41,5 @@ pub struct ChannelMessage {
 pub enum ChannelData {
     UserData(UserData),
     MarketData(MarketData),
+    OrderActionError,
 }
