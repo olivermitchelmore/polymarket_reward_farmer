@@ -2,9 +2,9 @@
 name = "polymarket_reward_farmer"
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0-or-later"
 
 [dependencies]
-
 anyhow = "1.0.100"
 tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros"] }
 serde = { version = "1.0.228", features = ["derive"] }
