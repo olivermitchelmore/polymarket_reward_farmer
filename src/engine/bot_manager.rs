@@ -72,18 +72,6 @@ impl BotManager {
         }
     }
 
-    // pub fn get_initial_prices(&self) {
-    //     for (market_id, market_logic) in &self.markets {
-    //         let price_request = PriceRequest::builder()
-    //             .token_id(market_logic.token_ids.buy_token)
-    //             .side(Side::Buy)
-    //             .build();
-    //         PriceResponse
-    //     }
-    // }
-
-    // pub fn get_price(price_request: PriceRequest)
-
     pub fn start_websockets(&self) -> (Rx<ChannelMessage>, MAsyncTx<ChannelMessage>) {
         let mut asset_ids = Vec::new();
 

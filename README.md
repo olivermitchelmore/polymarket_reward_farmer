@@ -1,7 +1,7 @@
 > [!WARNING]
 > **USE AT YOUR OWN RISK.** This project is not a "plug-and-play" profit tool.
 >
-> * **Active Development:** This code is a **Work in Progress (WIP)**. It contains experimental logic and has not been tested thoroughly. Unexpected behavior or crashses could result in losing your entire balance.
+> * **Active Development:** This code is a **Work in Progress (WIP)**. It contains experimental logic and has not been tested thoroughly. Unexpected behavior or crashes could result in losing your entire balance.
 > * **Financial Risk:** Automated trading systems involve significant risk, you should assume that **loss of funds is highly likely**.
 
 # Polymarket Reward Farmer
@@ -15,18 +15,19 @@ Work in progress. This project is under active development and not ready for use
 
 ## Features
 
-- **Configurable:** adjust the order size, quoting spread and max exposure per market
-- **Multi-market support:** Quote multiple markets simultaneously 
-- **Risk management:** inventory management per market by adjusting quoting spread depending on max_exposure in config
-- **Panic:** Will attempt to cancel all orders for a market upon failure to place or cancel
+- **Configurable:** Adjust the order size, quoting spread and max exposure per market.
+- **Multi-market support:** Quote multiple markets simultaneously.
+- **Risk management:** Inventory management per market by adjusting quoting spread depending on max_exposure in config.
+- **Panic:** Will attempt to cancel all orders for a market upon failure to place or cancel.
 
 ## Quick Start Guide
 
 ### 1. Prerequisites
 Ensure you have the [Rust toolchain](https://rustup.rs/) installed.
+Ensure you have a polymarket account with a funder address.
 
 ### 2. Environment Setup
-Copy a `.env` file in the project root with the following variables:
+Create a `.env` file in the project root with the following variables:
 
 ```bash
 PRIVATE_KEY=your_private_key_here
