@@ -42,11 +42,9 @@ impl BotManager {
                             for order_request in order_requests {
                                 let order_request_tx = tx.clone();
                                 match order_request {
-                                    OrderRequest::PlaceOrder(order) => self.place_order(
-                                        order,
-                                        message.market_id,
-                                        order_request_tx,
-                                    ),
+                                    OrderRequest::PlaceOrder(order) => {
+                                        self.place_order(order, message.market_id, order_request_tx)
+                                    }
                                     OrderRequest::CancelOrder(order_id) => self.cancel_order(
                                         order_id,
                                         message.market_id,

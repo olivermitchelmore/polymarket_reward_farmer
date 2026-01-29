@@ -17,7 +17,7 @@ pub struct SigningUtils {
 }
 
 impl SigningUtils {
-    pub async fn new_client(private_key: &String, funder_address: &str) -> Result<Self> {
+    pub async fn new_client(private_key: &str, funder_address: &str) -> Result<Self> {
         let signer = LocalSigner::from_str(private_key)
             .context("Invalid private key")?
             .with_chain_id(Some(POLYGON));

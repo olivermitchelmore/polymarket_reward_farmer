@@ -74,15 +74,21 @@ impl Market {
         );
 
         if let Some(ask_result) = check_ask_result {
-            if let Some(order_id) = ask_result.cancel { order_requests.push(OrderRequest::CancelOrder(order_id)) }
-            if let Some(order) = ask_result.place { order_requests.push(OrderRequest::PlaceOrder(order)) }
+            if let Some(order_id) = ask_result.cancel {
+                order_requests.push(OrderRequest::CancelOrder(order_id))
+            }
+            if let Some(order) = ask_result.place {
+                order_requests.push(OrderRequest::PlaceOrder(order))
+            }
         }
 
         if let Some(bid_result) = check_bid_result {
             if let Some(order_id) = bid_result.cancel {
                 order_requests.push(OrderRequest::CancelOrder(order_id));
             }
-            if let Some(order) = bid_result.place { order_requests.push(OrderRequest::PlaceOrder(order)) }
+            if let Some(order) = bid_result.place {
+                order_requests.push(OrderRequest::PlaceOrder(order))
+            }
         }
 
         if order_requests.is_empty() {
@@ -167,9 +173,7 @@ impl Market {
         if let Some(order) = open_order {
             match &order.status {
                 OpenOrderStatus::Pending => false,
-                OpenOrderStatus::Placed(placed_order_id) => {
-                    order_id == placed_order_id
-                }
+                OpenOrderStatus::Placed(placed_order_id) => order_id == placed_order_id,
             }
         } else {
             false
@@ -192,37 +196,41 @@ impl Market {
     }
     pub fn cancelled_order_update(&mut self, order_id: String) {
         let order = self.get_order_side_from_id(&order_id);
-        if let Some(order_side) = order { match order_side {
-            OrderSide::Buy => {
-                self.bid_order = None;
+        if let Some(order_side) = order {
+            match order_side {
+                OrderSide::Buy => {
+                    self.bid_order = None;
+                }
+                OrderSide::Sell => {
+                    self.ask_order = None;
+                }
             }
-            OrderSide::Sell => {
-                self.ask_order = None;
-            }
-        } }
+        }
     }
     pub fn order_update(&mut self, fill: OrderUpdate) {
         let order = self.get_order_side_from_id(&fill.order_id);
-        if let Some(order_side) = order { match order_side {
-            OrderSide::Buy => {
-                if let Some(order) = &mut self.bid_order {
-                    order.matched += fill.amount;
-                    self.exposure += fill.amount;
-                    if order.matched >= self.config.order_size {
-                        self.bid_order = None;
+        if let Some(order_side) = order {
+            match order_side {
+                OrderSide::Buy => {
+                    if let Some(order) = &mut self.bid_order {
+                        order.matched += fill.amount;
+                        self.exposure += fill.amount;
+                        if order.matched >= self.config.order_size {
+                            self.bid_order = None;
+                        }
+                    }
+                }
+                OrderSide::Sell => {
+                    if let Some(order) = &mut self.ask_order {
+                        order.matched += fill.amount;
+                        self.exposure -= fill.amount;
+                        if order.matched >= self.config.order_size {
+                            self.ask_order = None;
+                        }
                     }
                 }
             }
-            OrderSide::Sell => {
-                if let Some(order) = &mut self.ask_order {
-                    order.matched += fill.amount;
-                    self.exposure -= fill.amount;
-                    if order.matched >= self.config.order_size {
-                        self.ask_order = None;
-                    }
-                }
-            }
-        } }
+        }
     }
 }
 

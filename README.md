@@ -53,7 +53,6 @@ max_exposure = 5
 
 ### 4. Build and Run
 ```bash
-cargo build --release
 cargo run --release
 ```
 

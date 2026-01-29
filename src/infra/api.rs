@@ -35,11 +35,3 @@ pub async fn get_token_id(slug: &String) -> Result<(TokenIds, B256)> {
     };
     Ok((token_ids, market_identifier))
 }
-
-// pub async fn assign_token_ids(configs: Market) -> Vec<(TokenIds, String)> {
-//     let mut token_id_futures = Vec::new();
-//     for slug in slugs {
-//         token_id_futures.push(get_token_id(slug));
-//     }
-//     join_all(token_id_futures).await
-// }
