@@ -29,7 +29,6 @@ impl SigningUtils {
             .authenticate()
             .await
             .context("Failed to create client")?;
-        // println!("Client created: {:?}", client);
         Ok(Self {
             client: Arc::new(client),
             signer,

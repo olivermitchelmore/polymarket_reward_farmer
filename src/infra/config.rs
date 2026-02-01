@@ -27,7 +27,8 @@ pub struct ConfigParams {
 
 impl ConfigParams {
     pub fn new() -> Result<Self> {
-        let (funder_address, private_key) = Self::load_env_vars().expect("Failed to load env vars");
+        let (funder_address, private_key) =
+            Self::load_env_vars().context("Failed to load env vars")?;
         let market_configs =
             MarketConfigs::load_config().context("Failed to load market_logic configs")?;
         Ok(Self {
