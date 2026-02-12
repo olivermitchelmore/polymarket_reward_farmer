@@ -1,7 +1,7 @@
 > [!WARNING]
 > **USE AT YOUR OWN RISK.** This project is not a "plug-and-play" profit tool.
 >
-> * **Active Development:** This code is a **Work in Progress (WIP)**. It contains experimental logic and has not been tested thoroughly. Unexpected behavior or crashes could result in losing your entire balance.
+> * **Active Development:** This code contains experimental logic and has not been tested thoroughly. Unexpected behavior or crashes could result in losing your entire balance.
 > * **Financial Risk:** Automated trading systems involve significant risk, you should assume that **loss of funds is highly likely**.
 
 # Polymarket Reward Farmer
